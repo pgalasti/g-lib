@@ -13,7 +13,7 @@ else                               # Linux
     LDFLAGS := -shared
 endif
 
-TARGET := $(LIB_NAME).$(SHARED_EXT)
+TARGET := lib$(LIB_NAME).$(SHARED_EXT)
 
 SRC_DIR  := src
 INC_DIR  := include
@@ -34,8 +34,9 @@ $(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 install: $(TARGET)
+	mkdir -p $(INSTALL_LIB)
 	mkdir -p $(INSTALL_INC)
-	install -m 0755 $(TARGET) $(INSTALL_LIB)
+	install -m 0755 $(TARGET) $(INSTALL_LIB)/$(TARGET)
 	cp -r $(INC_DIR)/* $(INSTALL_INC)/
 
 	@echo "Installed $(TARGET) into $(INSTALL_LIB)"
