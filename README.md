@@ -20,8 +20,7 @@ so you can easily link it from other projects.
 ```text
 g-lib/
 ├── include/
-│   └── g-lib/
-│       └── ... public headers ...
+│   └── ... public headers ...
 ├── src/
 │   └── ... .cpp implementation files ...
 ├── Makefile
@@ -41,4 +40,9 @@ make install
 ## Clean
 ```bash
 make clean
+```
+
+## Run Test Suite
+```bash
+make test
 ```

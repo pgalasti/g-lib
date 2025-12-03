@@ -45,5 +45,8 @@ install: $(TARGET)
 clean:
 	rm -f $(OBJECTS) $(TARGET)
 
-.PHONY: all clean install
+test: $(TARGET)
+	$(MAKE) -C tests test
+
+.PHONY: all clean install test
 

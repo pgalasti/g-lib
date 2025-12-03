@@ -2,3 +2,7 @@ build/*
 
 *.so
 *.o
+
+# Ignore test outputs but keep source files
+test/Test*
+!test/Test*.cpp
