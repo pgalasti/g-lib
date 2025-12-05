@@ -4,7 +4,7 @@
 #include <memory>
 #include <queue>
 
-namespace GLib {
+namespace GLib::Util {
 
 template <typename T> class IDGenerator {
 public:
@@ -26,6 +26,6 @@ private:
 
   std::queue<T> m_IdQueue;
 };
-} // namespace GLib
+} // namespace GLib::Util
 
 #endif

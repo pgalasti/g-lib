@@ -1,11 +1,11 @@
-#include "IDGenerator.h"
+#include "g-lib/util/IDGenerator.h"
 #include <cassert>
 #include <iostream>
 
 int main() {
   std::cout << "Testing IDGenerator..." << std::endl;
 
-  GLib::IDGenerator<int> gen(100);
+  GLib::Util::IDGenerator<int> gen(100);
 
   // Test initial values
   assert(gen.GetNextId() == 100);

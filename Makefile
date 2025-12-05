@@ -20,9 +20,9 @@ INC_DIR  := include
 
 PREFIX      := /usr/local
 INSTALL_LIB := $(PREFIX)/lib
-INSTALL_INC := $(PREFIX)/include/$(LIB_NAME)
+INSTALL_INC := $(PREFIX)/include
 
-SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+SOURCES := $(shell find $(SRC_DIR) -name '*.cpp')
 OBJECTS := $(SOURCES:.cpp=.o)
 
 all: $(TARGET)
@@ -34,6 +34,8 @@ $(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 install: $(TARGET)
+	rm -f $(INSTALL_LIB)/$(TARGET)
+	rm -rf $(INSTALL_INC)/g-lib
 	mkdir -p $(INSTALL_LIB)
 	mkdir -p $(INSTALL_INC)
 	install -m 0755 $(TARGET) $(INSTALL_LIB)/$(TARGET)

@@ -4,7 +4,7 @@
 #include <list>
 #include <string>
 
-namespace GLib {
+namespace GLib::Util {
 class StringParser {
 public:
   StringParser();
@@ -32,6 +32,6 @@ protected:
 private:
   void Init();
 };
-} // namespace GLib
+} // namespace GLib::Util
 
 #endif

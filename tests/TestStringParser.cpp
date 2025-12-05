@@ -1,4 +1,4 @@
-#include "StringParser.h"
+#include "g-lib/util/StringParser.h"
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -9,7 +9,7 @@ int main() {
   std::string input = "Hello,World,Test";
   std::string delimiter = ",";
 
-  GLib::StringParser parser(input, delimiter);
+  GLib::Util::StringParser parser(input, delimiter);
 
   assert(parser.getSize() == 3);
 

@@ -1,6 +1,6 @@
-#include "IDGenerator.h"
+#include "g-lib/util/IDGenerator.h"
 
-namespace GLib {
+namespace GLib::Util {
 
 template <typename T>
 IDGenerator<T>::IDGenerator(const T firstValue, const T incrementAmount) {
@@ -44,4 +44,4 @@ template <typename T> void IDGenerator<T>::Release(const T id) {
 // Explicit instantiation
 template class IDGenerator<int>;
 
-} // namespace GLib
+} // namespace GLib::Util

@@ -1,6 +1,6 @@
-#include "StringParser.h"
+#include "g-lib/util/StringParser.h"
 
-using namespace GLib;
+using namespace GLib::Util;
 
 StringParser::StringParser() { Init(); }
 
