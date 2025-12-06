@@ -1,3 +1,6 @@
+#ifndef GLIB_DS_NODE_H
+#define GLIB_DS_NODE_H
+
 namespace GLib::DS {
   template<typename T>
   struct SNode {
@@ -42,3 +45,5 @@ namespace GLib::DS {
     return pRoot;
   }
 }
+
+#endif
