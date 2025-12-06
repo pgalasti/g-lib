@@ -2,11 +2,12 @@
 #define GLIB_LINKED_LIST_H
 
 #include "Node.h"
+#include "Seek.h"
 
 namespace GLib::DS {
 enum class LinkedListEnd { BEGINNING = 0, END = 1 };
 
-template <typename T> class LinkedList {
+template <typename T> class LinkedList : public Seek<T> {
 private:
   unsigned int m_Size;
   DNode<T> *m_pHead;
@@ -29,6 +30,8 @@ public:
   T Peek(LinkedListEnd end = LinkedListEnd::END) const;
   unsigned int Size() const;
   bool IsEmpty() const;
+
+  bool Contains(const T& t) const override;
 };
 
 } // namespace GLib::DS

@@ -1,4 +1,5 @@
 #include "g-lib/ds/LinkedList.h"
+#include "g-lib/ds/Seek.h"
 #include <cassert>
 #include <iostream>
 
@@ -73,6 +74,19 @@ int main() {
   assert(strList.Size() == 2);
   assert(strList.Pop(LinkedListEnd::BEGINNING) == "Hello");
   assert(strList.Pop(LinkedListEnd::BEGINNING) == "World");
+
+  // Test 9: Test Seek Interface
+  LinkedList<int> seekTestList;
+  seekTestList.Push(1);
+  seekTestList.Push(2);
+  seekTestList.Push(3);
+  seekTestList.Push(4);
+  seekTestList.Push(5);
+  seekTestList.Push(6);
+
+  Seek<int>& seek = seekTestList;
+  assert(seek.Contains(3));
+  assert(!seek.Contains(99));
 
   std::cout << "LinkedList tests passed!" << std::endl;
   return 0;

@@ -133,4 +133,22 @@ template <typename T> bool LinkedList<T>::IsEmpty() const {
   return m_Size == 0;
 }
 
+template <typename T> bool LinkedList<T>::Contains(const T &t) const {
+  if (m_pHead == nullptr) {
+    return false;
+  }
+  if (m_pHead->value == t) {
+    return true;
+  }
+
+  DNode<T> *pCursor = m_pHead->pRight;
+  while (pCursor) {
+    if (pCursor->value == t) {
+      return true;
+    }
+    pCursor = pCursor->pRight;
+  }
+
+  return false;
+}
 } // namespace GLib::DS
