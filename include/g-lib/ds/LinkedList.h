@@ -4,36 +4,34 @@
 #include "Node.h"
 
 namespace GLib::DS {
-  enum class LinkedListEnd {
-    BEGINNING   = 0,
-    END         = 1
-  };
+enum class LinkedListEnd { BEGINNING = 0, END = 1 };
 
-  template<typename T> 
-  class LinkedList {
-    private:
-      unsigned int   m_Size;
-      SNode<T>*      m_pHead;
-      SNode<T>*      m_pTail;
-      
-      // May setup an optional initial pool of nodes already allocated by memory
+template <typename T> class LinkedList {
+private:
+  unsigned int m_Size;
+  DNode<T> *m_pHead;
+  DNode<T> *m_pTail;
 
-    public:  
-      LinkedList     ();
-      ~LinkedList    ();
-      LinkedList     (LinkedList&& other) noexcept;
-      LinkedList     (const LinkedList&) = delete;
-      LinkedList&    operator=(const LinkedList&) = delete;
-      LinkedList&    operator=(LinkedList&& other) noexcept;
-      
-      void           Push(const T& value, LinkedListEnd end = LinkedListEnd::END);
-      T              Pop(LinkedListEnd end = LinkedListEnd::END); 
-      void           Clear();
-      
-      T              Peek(LinkedListEnd end = LinkedListEnd::END) const;
-      unsigned int   size() const;
+  // May setup an optional initial pool of nodes already allocated by memory
 
-  };
+public:
+  LinkedList();
+  ~LinkedList();
+  LinkedList(LinkedList &&other) noexcept;
+  LinkedList(const LinkedList &) = delete;
+  LinkedList &operator=(const LinkedList &) = delete;
+  LinkedList &operator=(LinkedList &&other) noexcept;
 
-} // namespce GLib::DS
+  void Push(const T &value, LinkedListEnd end = LinkedListEnd::END);
+  T Pop(LinkedListEnd end = LinkedListEnd::END);
+  void Clear();
+
+  T Peek(LinkedListEnd end = LinkedListEnd::END) const;
+  unsigned int Size() const;
+  bool IsEmpty() const;
+};
+
+} // namespace GLib::DS
+
+#include "LinkedList.tpp"
 #endif
