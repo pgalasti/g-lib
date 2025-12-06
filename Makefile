@@ -7,7 +7,7 @@ CXXFLAGS := -std=c++17 -fPIC -Iinclude -Wall -Wextra -O2
 
 ifeq ($(UNAME_S),Darwin)          # macOS
     SHARED_EXT := dylib
-    LDFLAGS := -shared
+    LDFLAGS := -shared -Wl,-install_name,@rpath/lib$(LIB_NAME).$(SHARED_EXT)
 else                               # Linux
     SHARED_EXT := so
     LDFLAGS := -shared

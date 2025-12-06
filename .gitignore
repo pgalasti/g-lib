@@ -2,7 +2,7 @@ build/*
 
 *.so
 *.o
-
+*.dylib
 # Ignore test outputs but keep source files
 tests/Test*
 !tests/Test*.cpp

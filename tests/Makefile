@@ -1,6 +1,6 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -I../include -Wall -Wextra -O2
-LDFLAGS  := -L.. -lg-lib -Wl,-rpath=..
+LDFLAGS  := -L.. -lg-lib -Wl,-rpath,@loader_path/..
 
 SOURCES := $(wildcard *.cpp)
 EXECUTABLES := $(SOURCES:.cpp=)
