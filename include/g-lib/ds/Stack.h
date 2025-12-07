@@ -27,4 +27,5 @@ public:
 };
 } // namespace GLib::DS
 
+#include "Stack.tpp"
 #endif
