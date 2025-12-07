@@ -1,6 +1,6 @@
 # g-lib
 
-`g-lib` is a small C++ shared library to hold some of my shortcut logic intended for use on **macOS** and **Linux**.
+`g-lib` is a small C++ shared library to hold some of my shortcut logic and brush up on data structures and algorithms intended for use on **macOS** and **Linux**.
 
 It builds as:
 
