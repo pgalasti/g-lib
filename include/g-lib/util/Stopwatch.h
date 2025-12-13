@@ -20,12 +20,12 @@ namespace GLib::Util {
       void Reset();
       std::string GetLabel() const;
 
-      template <typename Duration = std::chrono::microseconds>
+      template <typename Duration = std::chrono::nanoseconds>
       std::int64_t Current() const {
         return std::chrono::duration_cast<Duration>(clock::now() - m_Start).count();
       }
 
-      template <typename Duration = std::chrono::microseconds>
+      template <typename Duration = std::chrono::nanoseconds>
       std::int64_t Tick() {
 	auto now = clock::now();
         auto delta = std::chrono::duration_cast<Duration>(now - m_LastTick).count();
