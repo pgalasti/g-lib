@@ -1,6 +1,11 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -I../include -Wall -Wextra -O2
-LDFLAGS  := -L.. -lg-lib -Wl,-rpath,@loader_path/..
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	LDFLAGS  := -L.. -lg-lib -Wl,-rpath,@loader_path/..
+else
+	LDFLAGS  := -L.. -lg-lib -Wl,-rpath,'$$ORIGIN/..'
+endif
 
 SOURCES := $(wildcard *.cpp)
 EXECUTABLES := $(SOURCES:.cpp=)
@@ -13,7 +18,7 @@ all: $(EXECUTABLES)
 test: all
 	@for test in $(EXECUTABLES); do \
 		echo "Running $$test..."; \
-		./$$test; \
+		LD_LIBRARY_PATH=..:$$LD_LIBRARY_PATH ./$$test; \
 	done
 
 clean:

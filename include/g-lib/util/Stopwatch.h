@@ -18,14 +18,23 @@ namespace GLib::Util {
       
       void Start();
       void Reset();
+      std::string GetLabel() const;
 
       template <typename Duration = std::chrono::microseconds>
-      std::int64_t Current() const;
+      std::int64_t Current() const {
+        return std::chrono::duration_cast<Duration>(clock::now() - m_Start).count();
+      }
 
       template <typename Duration = std::chrono::microseconds>
-      std::int64_t Tick();
+      std::int64_t Tick() {
+	auto now = clock::now();
+        auto delta = std::chrono::duration_cast<Duration>(now - m_LastTick).count();
+        m_LastTick = now;
+        return delta;
+      }
       
    private:
+      std::string m_Label;
       clock::time_point m_Start{};
       clock::time_point m_LastTick{};
   };
