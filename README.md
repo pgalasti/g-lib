@@ -4,8 +4,8 @@
 
 It builds as:
 
-- `g-lib.dylib` on macOS  
-- `g-lib.so` on Linux  
+- `g-lib.dylib` on macOS
+- `g-lib.so` on Linux
 
 and installs headers under:
 
@@ -30,21 +30,81 @@ g-lib/
 ```
 
 ## Build
+
 ```bash
 make
 ```
 
 ## Install
+
 ```bash
 make install
 ```
 
 ## Clean
+
 ```bash
 make clean
 ```
 
 ## Run Test Suite
+
 ```bash
 make test
 ```
+
+---
+
+## Using g-lib in Your Project
+
+After running `make install`, link against `g-lib` using `-lg-lib` and point your compiler at the installed headers if they're not in your system include path.
+
+### Compiling directly with g++
+
+```bash
+g++ -std=c++17 main.cpp -o my_app \
+    -I/usr/local/include \
+    -L/usr/local/lib -lg-lib \
+    -Wl,-rpath=/usr/local/lib
+```
+
+### Example Makefile
+
+```makefile
+CXX      := g++
+CXXFLAGS := -std=c++17 -Wall -Wextra -O2
+PREFIX   ?= /usr/local
+
+my_app: main.cpp
+	$(CXX) $(CXXFLAGS) \
+	    -I$(PREFIX)/include \
+	    $< -o $@ \
+	    -L$(PREFIX)/lib -lg-lib -Wl,-rpath=$(PREFIX)/lib
+```
+
+### Example source
+
+```cpp
+#include <g-lib/ds/SQueue.h>
+#include <g-lib/ds/DQueue.h>
+#include <g-lib/util/RNG.h>
+#include <g-lib/util/Stopwatch.h>
+
+int main() {
+    GLib::DS::SQueue<int> queue;
+    queue.Push(1);
+    queue.Push(2);
+    int val = queue.Pop();
+
+    GLib::Util::RNG<int> rng(1, 100);
+    rng.Fill(50);
+    int r = rng.Next();
+
+    GLib::Util::Stopwatch sw("timer");
+    sw.Start();
+    auto ns = sw.Current();
+    auto ms = sw.Current<std::chrono::milliseconds>();
+}
+```
+
+> **Custom install prefix** — if you installed to a non-default location, substitute that path for `/usr/local` everywhere above, or pass `PREFIX=/your/path` to the example Makefile.
