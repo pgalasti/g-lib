@@ -2,6 +2,8 @@
 
 `g-lib` is a small C++ shared library to hold some of my shortcut logic and brush up on data structures and algorithms intended for use on **macOS** and **Linux**.
 
+If you use the library, just note the std equivalent are generally faster for most data structures, so it's not recommended to use this for production code that needs performance.
+
 It builds as:
 
 - `g-lib.dylib` on macOS
@@ -25,6 +27,8 @@ g-lib/
 │   └── ... .cpp namespaces/impl files ...
 ├── tests/
 │   └── ... integration test files ...
+├── benchmarks/
+│   └── ... per data-structure benchmarks vs std equivalents ...
 ├── Makefile
 └── README.md
 ```
@@ -51,6 +55,20 @@ make clean
 
 ```bash
 make test
+```
+
+## Run Benchmarks
+
+Each data structure has a dedicated benchmark that compares it against its `std` equivalent. Run them all from the `benchmarks/` directory:
+
+```bash
+cd benchmarks && make bench
+```
+
+Or build and run a single benchmark:
+
+```bash
+cd benchmarks && make BenchHashMap && ./BenchHashMap
 ```
 
 ---
