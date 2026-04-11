@@ -4,7 +4,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	LDFLAGS  := -L.. -lg-lib -Wl,-rpath,@loader_path/..
 else
-	LDFLAGS  := -L.. -lg-lib -Wl,-rpath,'$$ORIGIN/..'
+	LDFLAGS  := -L.. -lg-lib -Wl,-rpath,'$$ORIGIN/..' -lpthread
 endif
 
 SOURCES := $(wildcard *.cpp)

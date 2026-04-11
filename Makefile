@@ -10,7 +10,7 @@ ifeq ($(UNAME_S),Darwin)          # macOS
     LDFLAGS := -shared -Wl,-install_name,@rpath/lib$(LIB_NAME).$(SHARED_EXT)
 else                               # Linux
     SHARED_EXT := so
-    LDFLAGS := -shared
+    LDFLAGS := -shared -lpthread
 endif
 
 TARGET := lib$(LIB_NAME).$(SHARED_EXT)
