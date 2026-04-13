@@ -7,4 +7,11 @@ build/*
 tests/Test*
 !tests/Test*.cpp
 
+# Ignore benchmark binaries but keep source files
+benchmarks/Bench*
+!benchmarks/Bench*.cpp
+
+# Vim swap files
+*.swp
+
 test_package/*

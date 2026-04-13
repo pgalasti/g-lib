@@ -4,12 +4,13 @@
 #include <cstddef>
 #include <memory>
 #include <mutex>
-#include <stdexcept>
 #include <new>
+#include <stdexcept>
+#include <utility>
 
 namespace GLib::Core {
 
-// Unit for specifying allocator capacity.
+// Unit for specifying pool capacity.
 enum class MemoryUnit : uint8_t {
     KB = 0,
     MB,
@@ -37,29 +38,45 @@ struct BlockHeader {
     BlockHeader* next_free; // Intrusive free-list link; only valid when !in_use.
 };
 
-static constexpr size_t ALIGNMENT  = alignof(std::max_align_t);
-static constexpr size_t HEADER_SIZE = AlignUp(sizeof(BlockHeader), ALIGNMENT);
+static constexpr size_t ALIGNMENT       = alignof(std::max_align_t);
+static constexpr size_t HEADER_SIZE     = AlignUp(sizeof(BlockHeader), ALIGNMENT);
+static constexpr size_t MIN_BLOCK_SIZE  = HEADER_SIZE + ALIGNMENT;
 
-static constexpr size_t MIN_BLOCK_SIZE = HEADER_SIZE + ALIGNMENT;
+} // namespace detail
 
-// The raw memory pool. Shared (via shared_ptr) across all rebound copies of
-// GeneralHeapAllocator so every rebind variant draws from the same arena.
+// ---------------------------------------------------------------------------
+// MemoryPool
+//
+// A fixed-capacity arena allocator. Makes one OS allocation at construction
+// and manages that memory with a coalescing free list.
+//
+// Can be used directly for type-safe raw memory or full object lifecycle,
+// or handed to GeneralHeapAllocator for use with STL containers.
+//
+// Usage:
+//   MemoryPool pool(MemoryUnit::MB, 4);
+//
+//   // Raw memory
+//   int* arr = pool.Acquire<int>(64);
+//   pool.Release(arr, 64);
+//
+//   // Full object lifecycle
+//   MyClass* obj = pool.New<MyClass>(arg1, arg2);
+//   pool.Delete(obj);
+//
+//   // Bulk discard — O(1) regardless of how many objects are live
+//   pool.Reset();
+// ---------------------------------------------------------------------------
 class MemoryPool {
 public:
     MemoryPool(MemoryUnit unit, size_t count)
-        : m_Capacity(ToBytes(unit, count))
+        : m_Capacity(detail::ToBytes(unit, count)), m_BytesUsed(0)
     {
         if (m_Capacity == 0)
-            throw std::invalid_argument("GeneralHeapAllocator: capacity must be > 0");
+            throw std::invalid_argument("MemoryPool: capacity must be > 0");
 
         m_Base = new char[m_Capacity];
-
-        // Bootstrap: the entire pool is one big free block.
-        auto* header   = reinterpret_cast<BlockHeader*>(m_Base);
-        header->size      = m_Capacity;
-        header->in_use    = false;
-        header->next_free = nullptr;
-        m_FreeList = header;
+        InitFreeList();
     }
 
     ~MemoryPool() { delete[] m_Base; }
@@ -67,20 +84,71 @@ public:
     MemoryPool(const MemoryPool&)            = delete;
     MemoryPool& operator=(const MemoryPool&) = delete;
 
-    // Allocate at least `bytes` bytes, aligned to ALIGNMENT.
+    // ── raw typed memory ────────────────────────────────────────────────────
+
+    // Allocate storage for n objects of type T. Does NOT construct them.
+    template<typename T>
+    T* Acquire(size_t n = 1) {
+        return static_cast<T*>(Allocate(n * sizeof(T)));
+    }
+
+    // Return storage for n objects of type T back to the pool.
+    // Does NOT call destructors — use Delete for that.
+    template<typename T>
+    void Release(T* p, size_t n = 1) noexcept {
+        (void)n;
+        Deallocate(static_cast<void*>(p));
+    }
+
+    // ── full object lifecycle ───────────────────────────────────────────────
+
+    // Allocate storage and construct a single object in place.
+    template<typename T, typename... Args>
+    T* New(Args&&... args) {
+        T* p = Acquire<T>(1);
+        ::new (static_cast<void*>(p)) T(std::forward<Args>(args)...);
+        return p;
+    }
+
+    // Destruct a single object and return its storage to the pool.
+    template<typename T>
+    void Delete(T* p) noexcept {
+        if (!p) return;
+        p->~T();
+        Release(p, 1);
+    }
+
+    // ── pool management ─────────────────────────────────────────────────────
+
+    // Reset the entire pool to its initial empty state in O(1).
+    // All previously acquired pointers are immediately invalidated.
+    void Reset() noexcept {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        m_BytesUsed = 0;
+        InitFreeList();
+    }
+
+    // ── diagnostics ─────────────────────────────────────────────────────────
+
+    size_t Capacity()   const noexcept { return m_Capacity; }
+    size_t BytesUsed()  const noexcept { return m_BytesUsed; }
+    size_t BytesFree()  const noexcept { return m_Capacity - m_BytesUsed; }
+
+    // ── internals used by GeneralHeapAllocator ──────────────────────────────
+
     void* Allocate(size_t bytes) {
         std::lock_guard<std::mutex> lock(m_Mutex);
 
-        const size_t needed = HEADER_SIZE + AlignUp(bytes, ALIGNMENT);
+        const size_t needed = detail::HEADER_SIZE +
+                              detail::AlignUp(bytes, detail::ALIGNMENT);
 
-        BlockHeader** prev = &m_FreeList;
-        BlockHeader*  curr = m_FreeList;
+        detail::BlockHeader** prev = &m_FreeList;
+        detail::BlockHeader*  curr = m_FreeList;
 
         while (curr) {
             if (curr->size >= needed) {
-                // Split the block if the leftover is large enough to be useful.
-                if (curr->size >= needed + MIN_BLOCK_SIZE) {
-                    auto* split      = reinterpret_cast<BlockHeader*>(
+                if (curr->size >= needed + detail::MIN_BLOCK_SIZE) {
+                    auto* split      = reinterpret_cast<detail::BlockHeader*>(
                                            reinterpret_cast<char*>(curr) + needed);
                     split->size      = curr->size - needed;
                     split->in_use    = false;
@@ -88,13 +156,13 @@ public:
                     curr->size       = needed;
                     *prev            = split;
                 } else {
-                    // Use the whole block; remove from free list.
                     *prev = curr->next_free;
                 }
 
                 curr->in_use    = true;
                 curr->next_free = nullptr;
-                return reinterpret_cast<char*>(curr) + HEADER_SIZE;
+                m_BytesUsed    += curr->size;
+                return reinterpret_cast<char*>(curr) + detail::HEADER_SIZE;
             }
 
             prev = &curr->next_free;
@@ -109,15 +177,14 @@ public:
 
         std::lock_guard<std::mutex> lock(m_Mutex);
 
-        auto* header  = reinterpret_cast<BlockHeader*>(
-                            static_cast<char*>(p) - HEADER_SIZE);
+        auto* header   = reinterpret_cast<detail::BlockHeader*>(
+                             static_cast<char*>(p) - detail::HEADER_SIZE);
         header->in_use = false;
+        m_BytesUsed   -= header->size;
 
-        // Insert into the free list sorted by address so adjacent blocks
-        // are always neighbours in the list — makes coalescing O(1).
-        BlockHeader*  prev_block = nullptr;
-        BlockHeader** prev_ptr   = &m_FreeList;
-        BlockHeader*  curr       = m_FreeList;
+        detail::BlockHeader*  prev_block = nullptr;
+        detail::BlockHeader** prev_ptr   = &m_FreeList;
+        detail::BlockHeader*  curr       = m_FreeList;
 
         while (curr && curr < header) {
             prev_block = curr;
@@ -128,7 +195,7 @@ public:
         header->next_free = curr;
         *prev_ptr         = header;
 
-        // Coalesce with the next block if it is physically adjacent.
+        // Coalesce with next neighbour.
         char* header_end = reinterpret_cast<char*>(header) + header->size;
         if (header->next_free &&
             reinterpret_cast<char*>(header->next_free) == header_end) {
@@ -136,7 +203,7 @@ public:
             header->next_free = header->next_free->next_free;
         }
 
-        // Coalesce with the previous block if it is physically adjacent.
+        // Coalesce with previous neighbour.
         if (prev_block) {
             char* prev_end = reinterpret_cast<char*>(prev_block) + prev_block->size;
             if (prev_end == reinterpret_cast<char*>(header)) {
@@ -146,25 +213,34 @@ public:
         }
     }
 
-    size_t Capacity() const noexcept { return m_Capacity; }
-
 private:
-    char*        m_Base;
-    size_t       m_Capacity;
-    BlockHeader* m_FreeList;
-    std::mutex   m_Mutex;
-};
+    void InitFreeList() noexcept {
+        auto* header      = reinterpret_cast<detail::BlockHeader*>(m_Base);
+        header->size      = m_Capacity;
+        header->in_use    = false;
+        header->next_free = nullptr;
+        m_FreeList        = header;
+    }
 
-} // namespace detail
+    char*                 m_Base;
+    size_t                m_Capacity;
+    size_t                m_BytesUsed;
+    detail::BlockHeader*  m_FreeList;
+    std::mutex            m_Mutex;
+};
 
 // ---------------------------------------------------------------------------
 // GeneralHeapAllocator<T>
 //
-// STL-compatible allocator backed by a fixed-capacity pool.
+// STL-compatible allocator backed by a shared MemoryPool.
 //
 // Usage:
-//   GeneralHeapAllocator<int> gha(MemoryUnit::MB, 4); // 4 MB pool
+//   GeneralHeapAllocator<int> gha(MemoryUnit::MB, 4);
 //   std::vector<int, GeneralHeapAllocator<int>> v(gha);
+//
+// The underlying pool can also be accessed directly:
+//   auto pool = gha.Pool();
+//   int* p = pool->Acquire<int>(10);
 // ---------------------------------------------------------------------------
 template<typename T>
 class GeneralHeapAllocator {
@@ -175,8 +251,6 @@ public:
     using size_type       = std::size_t;
     using difference_type = std::ptrdiff_t;
 
-    // STL containers call rebind<U>::other to get an allocator for their
-    // internal node types. The rebound allocator shares the same pool.
     template<typename U>
     struct rebind {
         using other = GeneralHeapAllocator<U>;
@@ -184,25 +258,27 @@ public:
 
     // Primary constructor — creates the underlying pool.
     GeneralHeapAllocator(MemoryUnit unit, size_type count)
-        : m_Pool(std::make_shared<detail::MemoryPool>(unit, count))
+        : m_Pool(std::make_shared<MemoryPool>(unit, count))
     {}
 
-    // Copying shares the pool (same arena, different type parameter).
+    // Wrap an existing pool — lets you share one pool between the allocator
+    // and direct Acquire/New calls.
+    explicit GeneralHeapAllocator(std::shared_ptr<MemoryPool> pool)
+        : m_Pool(std::move(pool))
+    {}
+
     GeneralHeapAllocator(const GeneralHeapAllocator&)            = default;
     GeneralHeapAllocator& operator=(const GeneralHeapAllocator&) = default;
 
-    // Rebind copy constructor — called by STL when it needs a different T.
     template<typename U>
     explicit GeneralHeapAllocator(const GeneralHeapAllocator<U>& other) noexcept
         : m_Pool(other.m_Pool)
     {}
 
-    // Allocate storage for n objects of type T.
     T* allocate(size_type n) {
         return static_cast<T*>(m_Pool->Allocate(n * sizeof(T)));
     }
 
-    // Return storage for n objects back to the pool.
     void deallocate(T* p, size_type /*n*/) noexcept {
         m_Pool->Deallocate(static_cast<void*>(p));
     }
@@ -211,7 +287,9 @@ public:
         return m_Pool->Capacity() / sizeof(T);
     }
 
-    // Two allocators are equal if they share the same pool.
+    // Direct access to the pool for Acquire/New/Reset etc.
+    std::shared_ptr<MemoryPool> Pool() const noexcept { return m_Pool; }
+
     template<typename U>
     bool operator==(const GeneralHeapAllocator<U>& other) const noexcept {
         return m_Pool == other.m_Pool;
@@ -223,9 +301,8 @@ public:
     }
 
 private:
-    std::shared_ptr<detail::MemoryPool> m_Pool;
+    std::shared_ptr<MemoryPool> m_Pool;
 
-    // All rebind instantiations need access to m_Pool.
     template<typename U> friend class GeneralHeapAllocator;
 };
 
