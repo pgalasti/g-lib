@@ -1,5 +1,5 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -I../include -Wall -Wextra -O2
+CXXFLAGS := -std=c++23 -I../include -Wall -Wextra -O2
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	LDFLAGS  := -L.. -lg-lib -Wl,-rpath,@loader_path/..

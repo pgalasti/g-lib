@@ -5,7 +5,7 @@ namespace GLib::Util {
 
   // Usage:
   // {
-  //   GeneralScopeGuard<decltype(someFuncOrLambda)>(someFuncOrLambda) gsg;
+  //   GeneralScopeGuard<decltype(someFuncOrLambda)> gsg(someFuncOrLambda);
   //   ...
   // } // RAII to invoke handled function
 
@@ -17,7 +17,7 @@ namespace GLib::Util {
 
     explicit GeneralScopeGuard(F func) : m_Func {func} {}
     ~GeneralScopeGuard() {
-      func();
+      m_Func();
     }
   };
 

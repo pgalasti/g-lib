@@ -3,7 +3,7 @@ UNAME_S := $(shell uname -s)
 LIB_NAME := g-lib
 
 CXX      := g++
-CXXFLAGS := -std=c++17 -fPIC -Iinclude -Wall -Wextra -O2
+CXXFLAGS := -std=c++23 -fPIC -Iinclude -Wall -Wextra -O2
 
 ifeq ($(UNAME_S),Darwin)          # macOS
     SHARED_EXT := dylib
