@@ -80,7 +80,7 @@ After running `make install`, link against `g-lib` using `-lg-lib` and point you
 ### Compiling directly with g++
 
 ```bash
-g++ -std=c++17 main.cpp -o my_app \
+g++ -std=c++23 main.cpp -o my_app \
     -I/usr/local/include \
     -L/usr/local/lib -lg-lib \
     -Wl,-rpath=/usr/local/lib
@@ -90,7 +90,7 @@ g++ -std=c++17 main.cpp -o my_app \
 
 ```makefile
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -O2
+CXXFLAGS := -std=c++23 -Wall -Wextra -O2
 PREFIX   ?= /usr/local
 
 my_app: main.cpp
