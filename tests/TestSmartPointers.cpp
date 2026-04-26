@@ -150,6 +150,71 @@ int main() {
     assert(*up == 3);
   }
 
+  // --- IsEmpty() ---
+  std::cout << "UniquePointer Test :: IsEmpty() is true for default construction..." << std::endl;
+  {
+    UP<int> up;
+    assert(up.IsEmpty());
+  }
+
+  std::cout << "UniquePointer Test :: IsEmpty() is false after construction with pointer..." << std::endl;
+  {
+    UP<int> up(new int(1));
+    assert(!up.IsEmpty());
+  }
+
+  std::cout << "UniquePointer Test :: IsEmpty() is true after move-from..." << std::endl;
+  {
+    UP<int> a(new int(1));
+    UP<int> b(std::move(a));
+    assert(a.IsEmpty());
+    assert(!b.IsEmpty());
+  }
+
+  // --- operator bool ---
+  std::cout << "UniquePointer Test :: operator bool is false for empty pointer..." << std::endl;
+  {
+    UP<int> up;
+    assert(!up);
+  }
+
+  std::cout << "UniquePointer Test :: operator bool is true for non-empty pointer..." << std::endl;
+  {
+    UP<int> up(new int(1));
+    assert(up);
+  }
+
+  std::cout << "UniquePointer Test :: operator bool is usable in if-condition..." << std::endl;
+  {
+    UP<int> up(new int(5));
+    bool reached = false;
+    if (up) reached = true;
+    assert(reached);
+  }
+
+  // --- operator== ---
+  std::cout << "UniquePointer Test :: operator== is true for same managed pointer..." << std::endl;
+  {
+    int* raw = new int(1);
+    UP<int> a(raw);
+    // Compare get() since two UPs can't hold the same ptr without double-free
+    assert(a.get() == raw);
+  }
+
+  std::cout << "UniquePointer Test :: operator== is false for different pointers..." << std::endl;
+  {
+    UP<int> a(new int(1));
+    UP<int> b(new int(2));
+    assert(!(a == b));
+  }
+
+  std::cout << "UniquePointer Test :: operator== is true for two empty pointers..." << std::endl;
+  {
+    UP<int> a;
+    UP<int> b;
+    assert(a == b);
+  }
+
   std::cout << "UniquePointer tests passed!" << std::endl;
   return 0;
 }

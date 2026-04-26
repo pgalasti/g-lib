@@ -53,7 +53,15 @@ public:
 
   T* operator->() const noexcept  { return ptr;   }
 
+  explicit operator bool() const noexcept  { return !IsEmpty(); }
+
   T* get()        const noexcept  { return ptr;   }
+
+  bool IsEmpty()  const noexcept  { return ptr == nullptr; }
+
+  bool operator==(const UniquePointer& otherUp) const noexcept {
+    return ptr == otherUp.ptr;
+  }
 };
 
 template <typename T, typename D = GenericDeleter<T>>
